@@ -26,7 +26,7 @@ if (isset($_SESSION["user"])) {
       <button type="submit">Entrar</button>
       <div id="loginMsg" class="msg"></div>
     </form>
-    <p class="muted">Usuario por defecto: <b>admin</b> / Contraseña: <b>admin</b><br>Ejecuta <code>init_db.php</code> la primera vez.</p>
+   
   </div>
   <script>
     const f = document.getElementById('loginForm');
