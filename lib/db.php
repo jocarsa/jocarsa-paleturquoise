@@ -1,7 +1,7 @@
 <?php
 // lib/db.php
 // Conexión SQLite con creación automática de carpeta
-$DB_PATH = __DIR__ . "/../data.sqlite";
+$DB_PATH = __DIR__ . "/../../databases/paleturquoise.sqlite";
 try {
     $pdo = new PDO("sqlite:" . $DB_PATH);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
