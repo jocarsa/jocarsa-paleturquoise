@@ -43,11 +43,37 @@ CREATE TABLE IF NOT EXISTS job_fields (
 $db->exec("
 CREATE TABLE IF NOT EXISTS applicants (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
+  offer_id INTEGER NOT NULL REFERENCES applicants(id) ON DELETE CASCADE,
+  creado_en TEXT NOT NULL DEFAULT (datetime('now')),
+  actualizado_en TEXT
+);
+");
+
+/* Fix: the correct FK for applicants.offer_id is job_offers(id).
+   If an older incorrect table exists, ensure correct one. */
+$db->exec("
+CREATE TABLE IF NOT EXISTS applicants_tmp_fix (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
   offer_id INTEGER NOT NULL REFERENCES job_offers(id) ON DELETE CASCADE,
   creado_en TEXT NOT NULL DEFAULT (datetime('now')),
   actualizado_en TEXT
 );
 ");
+
+// If original 'applicants' has wrong FK, migrate rows (best-effort)
+try {
+  $count = $db->query("SELECT COUNT(*) FROM applicants_tmp_fix")->fetchColumn();
+  if ($count == 0) {
+    $db->exec("INSERT INTO applicants_tmp_fix (id, offer_id, creado_en, actualizado_en)
+               SELECT id, offer_id, creado_en, actualizado_en FROM applicants");
+    $db->exec("DROP TABLE applicants");
+    $db->exec("ALTER TABLE applicants_tmp_fix RENAME TO applicants");
+  } else {
+    $db->exec("DROP TABLE applicants_tmp_fix");
+  }
+} catch (Exception $e) {
+  // ignore if structure already correct
+}
 
 $db->exec("
 CREATE TABLE IF NOT EXISTS applicant_fields (
@@ -59,6 +85,20 @@ CREATE TABLE IF NOT EXISTS applicant_fields (
   valor_datetime TEXT,
   valor_archivo TEXT,
   UNIQUE(applicant_id, field_id)
+);
+");
+
+/* ===== NUEVA TABLA: ENTREVISTAS ===== */
+$db->exec("
+CREATE TABLE IF NOT EXISTS interviews (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  offer_id INTEGER NOT NULL REFERENCES job_offers(id) ON DELETE CASCADE,
+  applicant_id INTEGER NOT NULL REFERENCES applicants(id) ON DELETE CASCADE,
+  fecha_hora TEXT NOT NULL,
+  numero INTEGER NOT NULL,
+  resultado TEXT,
+  observaciones TEXT,
+  creado_en TEXT NOT NULL DEFAULT (datetime('now'))
 );
 ");
 
@@ -74,3 +114,4 @@ if ($adminExists == 0) {
 }
 echo "Listo.\n";
 ?>
+

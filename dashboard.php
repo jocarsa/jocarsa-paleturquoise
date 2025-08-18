@@ -37,6 +37,9 @@ $isAdmin = ($u["rol"] === "admin");
         <button class="nav-link" data-tab="candidatos">
           <span class="dot"></span> Candidatos
         </button>
+        <button class="nav-link" data-tab="entrevistas">
+          <span class="dot"></span> Entrevistas
+        </button>
       </nav>
     </aside>
 
@@ -137,6 +140,39 @@ $isAdmin = ($u["rol"] === "admin");
           </div>
         </form>
         <div id="appsTableWrap"></div>
+      </section>
+
+      <section id="panel-entrevistas" class="panel hidden">
+        <h2>Entrevistas</h2>
+        <div class="row">
+          <label>Oferta
+            <select id="interviewsOffer"></select>
+          </label>
+        </div>
+        <form id="interviewForm" class="grid">
+          <input type="hidden" name="id">
+          <input type="hidden" name="offer_id">
+          <label>Candidato
+            <select name="applicant_id" required id="interviewApplicant"></select>
+          </label>
+          <label>Fecha/Hora
+            <input type="datetime-local" name="fecha_hora" required>
+          </label>
+          <label>Número entrevista
+            <input type="number" name="numero" min="1" value="1">
+          </label>
+          <label>Resultado
+            <input name="resultado">
+          </label>
+          <label class="wide">Observaciones
+            <textarea name="observaciones" rows="2"></textarea>
+          </label>
+          <div class="row">
+            <button type="submit">Guardar</button>
+            <button type="button" id="interviewReset" class="secondary">Limpiar</button>
+          </div>
+        </form>
+        <table id="interviewsTable"></table>
       </section>
     </main>
   </div>

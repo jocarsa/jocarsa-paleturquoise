@@ -253,5 +253,86 @@ if ($action === "applicants.delete") {
     j(["ok"=>true]);
 }
 
+/* ================= ENTREVISTAS ================= */
+/* Etiqueta del candidato = concatenación (con espacio) de los DOS primeros campos de texto no vacíos,
+   según el orden de los 'job_fields' (orden, id). Fallback al id si no hay textos. */
+if ($action === "interviews.list") {
+    $offer_id = (int)($_GET["offer_id"] ?? $_POST["offer_id"] ?? 0);
+    must($offer_id, "offer_id requerido");
+
+    $stmt = $db->prepare("
+        SELECT i.*,
+               a.id AS applicant_id,
+               printf('#%d %s',
+                 a.id,
+                 COALESCE(
+                   (SELECT GROUP_CONCAT(val, ' ')
+                      FROM (
+                        SELECT af.valor_texto AS val
+                          FROM applicant_fields af
+                          JOIN job_fields jf ON jf.id = af.field_id
+                         WHERE af.applicant_id = a.id
+                           AND jf.tipo = 'texto'
+                           AND TRIM(IFNULL(af.valor_texto, '')) <> ''
+                         ORDER BY jf.orden, jf.id
+                         LIMIT 3
+                      )
+                   ),
+                   ''
+                 )
+               ) AS applicant_label
+          FROM interviews i
+          JOIN applicants a ON a.id = i.applicant_id
+         WHERE a.offer_id = ?
+         ORDER BY i.fecha_hora DESC, i.id DESC
+    ");
+    $stmt->execute([$offer_id]);
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    j(["ok"=>true, "rows"=>$rows]);
+}
+
+
+if ($action === "interviews.create") {
+    $offer_id = (int)($_POST["offer_id"] ?? 0);
+    $applicant_id = (int)($_POST["applicant_id"] ?? 0);
+    $fecha_hora = trim($_POST["fecha_hora"] ?? "");
+    $numero = (int)($_POST["numero"] ?? 1);
+    $resultado = trim($_POST["resultado"] ?? "");
+    $observaciones = trim($_POST["observaciones"] ?? "");
+    must($offer_id && $applicant_id && $fecha_hora, "Campos obligatorios");
+
+    // Validar que el candidato pertenece a la oferta
+    $chk = $db->prepare("SELECT COUNT(*) FROM applicants WHERE id=? AND offer_id=?");
+    $chk->execute([$applicant_id,$offer_id]);
+    must($chk->fetchColumn() > 0, "Candidato no pertenece a la oferta");
+
+    $stmt = $db->prepare("INSERT INTO interviews (offer_id, applicant_id, fecha_hora, numero, resultado, observaciones) VALUES (?,?,?,?,?,?)");
+    $stmt->execute([$offer_id,$applicant_id,$fecha_hora,$numero,$resultado,$observaciones]);
+    j(["ok"=>true, "id"=>$db->lastInsertId()]);
+}
+
+if ($action === "interviews.update") {
+    $id = (int)($_POST["id"] ?? 0);
+    must($id, "ID requerido");
+    $applicant_id = (int)($_POST["applicant_id"] ?? 0);
+    $fecha_hora = trim($_POST["fecha_hora"] ?? "");
+    $numero = (int)($_POST["numero"] ?? 1);
+    $resultado = trim($_POST["resultado"] ?? "");
+    $observaciones = trim($_POST["observaciones"] ?? "");
+
+    $stmt = $db->prepare("UPDATE interviews SET applicant_id=?, fecha_hora=?, numero=?, resultado=?, observaciones=? WHERE id=?");
+    $stmt->execute([$applicant_id,$fecha_hora,$numero,$resultado,$observaciones,$id]);
+    j(["ok"=>true]);
+}
+
+if ($action === "interviews.delete") {
+    $id = (int)($_POST["id"] ?? 0);
+    must($id, "ID requerido");
+    $stmt = $db->prepare("DELETE FROM interviews WHERE id=?");
+    $stmt->execute([$id]);
+    j(["ok"=>true]);
+}
+
 j(["ok"=>false, "error"=>"Acción no reconocida"]);
 ?>
+
